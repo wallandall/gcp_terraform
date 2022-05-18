@@ -30,10 +30,10 @@ Remote state writes state data to cloud storage instead of storing it locally in
 1. In this project we will be storing our state in a GCP Bucket. Documentation on creating a bucket can be found [here](https://cloud.google.com/storage/docs/creating-buckets)
 2. Create a folder in the newly created bucket called terraform
 
-**! Please note**  bucket names need to be globaly unique, please update the configuration file to reflect your ```Bucket``` and ```Folder``` names.
+**! Please note**  bucket names need to be globaly unique, please update the vartiables.tf file to reflect your ```Bucket``` and ```Folder``` names.
 
-## Update Configuration File
-To ensure the solution runs correctly ensure you update the below values in the main.tf to reflect your environment:
+## Update variables.tf
+To ensure the solution runs correctly you neet to update the below values in the variables.tf to reflect your environment:
 1. credentials: This needs to point to the certificate you downloaded when creating the service account.
 2. project: The project name should reflect the project you created.
 3. region: Update the region to your location
