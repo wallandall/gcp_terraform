@@ -1,20 +1,27 @@
 # GCP Deployment with Terraform
 
-This project deploys infrastrucutre to Google Cloud Platform using Terraform. To run this solution clone this project and perform the following steps:
+This project uses Terraform to deploy a Flask Web Application to GCP and enable Firewall rules to grant access to the Web Server.
 
+To run the solution you first need to perform the below steps:
 ## Install Terraform:
-Detailed documentation can be fownd on the [Terraform Site](https://www.terraform.io/downloads) for your respective operating system.
+Before you use Terraform you need to install it, detailed documentation can be found on the [Terraform Site](https://www.terraform.io/downloads) for your respective operating system.
 
 ## Install GCP SDK
 To interact with the Google Cloud Platform you need to [Install the GCP SDK](https://cloud.google.com/sdk/docs/install)
 
 ## Create a new Project for your solution
-A GCP Project is a workspace that will be used to manage GCP Services, more information can be found [here](https://developers.google.com/workspace/guides/create-project)
+A GCP Project is a workspace that will be used to manage GCP Services, more information can be found [here](https://developers.google.com/workspace/guides/create-project). Once you have created your project, you need to add the project name to the variable ***project*** in ***variables.tf***
 
 ## Create a service account
 A service account will be used to interact with with the GCP API to manage resources defined in your Terraform Configuration. Steps to create a service account can be found [here](https://cloud.google.com/docs/authentication/production#create-service-account-console).
 
-**! To ensure the project runs correcty** , ensure the certificate is accessible to the solution and correctly refferenced. eg:
+Once you have created a service account, add a New Certificate, this will download a JSON file. Add the contents of the file to ***terraform-key.json***
+
+This file is used to authenticate when managing resources with Terraform
+
+**If you are deploying your solution to version control** do not include the terraform-key.json. I have added this file to .gitignore.
+
+
 ![image](img/cert.png)
 
 ## Enable cloud resource manager API
@@ -30,16 +37,25 @@ Remote state writes state data to cloud storage instead of storing it locally in
 1. In this project we will be storing our state in a GCP Bucket. Documentation on creating a bucket can be found [here](https://cloud.google.com/storage/docs/creating-buckets)
 2. Create a folder in the newly created bucket called terraform
 
-**! Please note**  bucket names need to be globaly unique, please update the vartiables.tf file to reflect your ```Bucket``` and ```Folder``` names.
+**! Please note**  bucket names need to be globaly unique, please update the main.tf file to reflect your ```Bucket``` and ```Folder``` names. e.g.:
+
+![image](img/backend.png)
 
 ## Update variables.tf
 To ensure the solution runs correctly you neet to update the below values in the variables.tf to reflect your environment:
-1. credentials: This needs to point to the certificate you downloaded when creating the service account.
-2. project: The project name should reflect the project you created.
+1. project: The project name should reflect the project you created.
 3. region: Update the region to your location
 4. zone: Update the zone to your current zone
-5. bucket: A GCP bucket requires a globaly unique name and this value should reflect the name of your bucket
-6. prefix: The prefex needs to be changed to the name of the folder you created in your bucket, eg terraform
+
+## startup.sh
+
+The ```startup.sh``` file is a Bash script that will be executed by terraform  using the ```metadata_startup_script = file("startup.sh")``` command in ```main.ts```.
+The script performs the following tasks:
+1. Installs Python
+2. Installs Flask
+3. Creates an ```app.py``` file
+4. Runs the Flask application
+
 
 ## Build the Solution
 ### Terraform Init

@@ -8,95 +8,73 @@ terraform {
 }
 
 provider "google" {  
-  credentials = file("terraform-key.json")
+  credentials = "terraform-key.json"
   project     = var.project
   region      = var.region
   zone        = var.zone
 }
 
-resource "google_compute_network" "vpc_network" {
-  name = "auto-terraform-network"
+terraform {
+  backend "gcs" {
+    bucket = "terraform_1905"
+    prefix = "terraform"
+    credentials = "terraform-key.json"
+   }
 }
 
+# Create a single Compute Engine instance
+resource "google_compute_instance" "default" {
+  name         = var.machine_name
+  machine_type = var.machine_type
+  zone         = var.zone
+  tags         = ["ssh"]
 
-resource "google_compute_autoscaler" "foobar" {
-  name   = "my-autoscaler"
-  project = var.project
-  zone   =  var.zone
-  target = google_compute_instance_group_manager.foobar.self_link
+  metadata = {
+    enable-oslogin = "TRUE"
+  }
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-9"
+    }
+  }
 
-  autoscaling_policy {
-    max_replicas    = 5
-    min_replicas    = 2
-    cooldown_period = 60
+  # Install Flask and run web app  
+  metadata_startup_script = file("startup.sh")
 
-    cpu_utilization {
-      target = 0.5
+  network_interface {
+    network = "default"
+
+    access_config {
+      # Include this section to give the VM an external IP address
     }
   }
 }
 
-resource "google_compute_instance_template" "foobar" {
-  name           = "my-instance-template"
-  machine_type   = "n1-standard-1"
-  can_ip_forward = false
-  project = var.project
-  tags = ["foo", "bar", "allow-lb-service"]
 
-  disk {
-    source_image = data.google_compute_image.centos_7.self_link
+resource "google_compute_firewall" "ssh" {
+  name = "allow-ssh"
+  allow {
+    ports    = ["22"]
+    protocol = "tcp"
   }
+  direction     = "INGRESS"
+  network       = "default"
+  priority      = 1000
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["ssh"]
+}
 
-  network_interface {
-    network = "default"
+resource "google_compute_firewall" "flask" {
+  name    = "flask-app-firewall"
+  network = "default"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["5000"]
   }
-
-  mtadata_startup_script = file("startup.sh")
-
-  service_account {
-    scopes = ["userinfo-email", "compute-ro", "storage-ro"]
-  }
+  source_ranges = ["0.0.0.0/0"]
 }
 
-module "lb" {
-  source  = "GoogleCloudPlatform/lb/google"
-  version = "2.2.0"
-  region       = var.region
-  name         = "load-balancer"
-  service_port = 80
-  target_tags  = ["my-target-pool"]
-  network      = google_compute_network.vpc_network.name
+output "Web-server-URL" {
+ value = join("",["http://",google_compute_instance.default.network_interface.0.access_config.0.nat_ip,":5000"])
 }
-
-
-resource "google_compute_target_pool" "foobar" {
-  name = "my-target-pool"
-  project = var.project
-  region = var.region
-}
-
-resource "google_compute_instance_group_manager" "foobar" {
-  name = "my-igm"
-  zone = var.zone
-  project = var.project
-  version {
-    instance_template  = google_compute_instance_template.foobar.self_link
-    name               = "primary"
-  }
-
-  target_pools       = [google_compute_target_pool.foobar.self_link]
-  base_instance_name = "terraform"
-}
-
-data "google_compute_image" "centos_7" {
-  family  = "centos-7"
-  project = "centos-cloud"
-}
-
-
-
-
-
-
-
-
