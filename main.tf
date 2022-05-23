@@ -16,8 +16,8 @@ provider "google" {
 
 terraform {
   backend "gcs" {
-    bucket = "terraform_1905"
-    prefix = "terraform"
+    bucket = "bucket_name"
+    prefix = "folder_name"
     credentials = "terraform-key.json"
    }
 }
